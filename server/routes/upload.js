@@ -14,11 +14,25 @@ app.put('/upload', function (req, res) {
     });
   }
 
-  // The name of the input field (i.e. "archivo") is used to retrieve the uploaded file
-  let archivo = req.files.archivo;
+  const archivo = req.files.archivo;
+  const nombreCortado = archivo.name.split('.');
+  const extension = nombreCortado[nombreCortado.length - 1].toLowerCase();
 
-  // Use the mv() method to place the file somewhere on your server
-  archivo.mv('uploads/filename.jpg', err => {
+  // Extensiones permitidas
+  const extensionesValidas = ['png', 'jpg', 'gif', 'jpeg'];
+
+  if (extensionesValidas.indexOf(extension) < 0) {
+    return res.status(400).json({
+      ok: false,
+      err: {
+        message:
+          'Las extensiones permitidas son ' + extensionesValidas.join(', '),
+        ext: extension,
+      },
+    });
+  }
+
+  archivo.mv(`uploads/${archivo.name}`, err => {
     if (err)
       return res.status(500).json({
         ok: false,
