@@ -4,6 +4,9 @@ const app = express();
 
 const Usuario = require('../models/usuario');
 
+const fs = require('fs');
+const path = require('path');
+
 app.use(fileUpload({ useTempFiles: true }));
 
 // Imagen de tipo usuario o tipo producto
@@ -71,6 +74,8 @@ async function imagenUsuario(id, res, nombreArchivo) {
     const usuarioDB = await Usuario.findById(id);
 
     if (!usuarioDB) {
+      borraArchivo(nombreArchivo, 'usuarios');
+
       return res.status(400).json({
         ok: false,
         err: {
@@ -78,6 +83,10 @@ async function imagenUsuario(id, res, nombreArchivo) {
         },
       });
     }
+
+    // Confirmamos que el path de la imagen actualmente guardada en el usuario exista
+    // antes de borrarla
+    borraArchivo(usuarioDB.img, 'usuarios');
 
     usuarioDB.img = nombreArchivo;
 
@@ -89,6 +98,8 @@ async function imagenUsuario(id, res, nombreArchivo) {
       img: nombreArchivo,
     });
   } catch (err) {
+    borraArchivo(nombreArchivo, 'usuarios');
+
     res.status(500).json({
       ok: false,
       err,
@@ -97,5 +108,15 @@ async function imagenUsuario(id, res, nombreArchivo) {
 }
 
 function imagenProducto() {}
+
+function borraArchivo(nombreImagen, tipo) {
+  const pathImagen = path.resolve(
+    __dirname,
+    `../../uploads/${tipo}/${nombreImagen}`
+  );
+  if (fs.existsSync(pathImagen)) {
+    fs.unlinkSync(pathImagen);
+  }
+}
 
 module.exports = app;
