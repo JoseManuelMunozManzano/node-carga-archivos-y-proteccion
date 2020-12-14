@@ -3,6 +3,7 @@ const fileUpload = require('express-fileupload');
 const app = express();
 
 const Usuario = require('../models/usuario');
+const Producto = require('../models/producto');
 
 const fs = require('fs');
 const path = require('path');
@@ -65,7 +66,9 @@ app.put('/upload/:tipo/:id', function (req, res) {
 
     // Aquí, imagen cargada
     // La respuesta se pasa por referencia
-    imagenUsuario(id, res, nombreArchivo);
+    tipo === 'usuarios'
+      ? imagenUsuario(id, res, nombreArchivo)
+      : imagenProducto(id, res, nombreArchivo);
   });
 });
 
@@ -107,7 +110,43 @@ async function imagenUsuario(id, res, nombreArchivo) {
   }
 }
 
-function imagenProducto() {}
+async function imagenProducto(id, res, nombreArchivo) {
+  try {
+    const productoDB = await Producto.findById(id);
+
+    if (!productoDB) {
+      borraArchivo(nombreArchivo, 'productos');
+
+      return res.status(400).json({
+        ok: false,
+        err: {
+          message: 'Producto no existe',
+        },
+      });
+    }
+
+    // Confirmamos que el path de la imagen actualmente guardada en el usuario exista
+    // antes de borrarla
+    borraArchivo(productoDB.img, 'productos');
+
+    productoDB.img = nombreArchivo;
+
+    productoGuardado = await productoDB.save();
+    res.json({
+      ok: true,
+      message: 'Imagen subida correctamente',
+      producto: productoGuardado,
+      img: nombreArchivo,
+    });
+  } catch (err) {
+    borraArchivo(nombreArchivo, 'productos');
+
+    res.status(500).json({
+      ok: false,
+      err,
+    });
+  }
+}
 
 function borraArchivo(nombreImagen, tipo) {
   const pathImagen = path.resolve(
