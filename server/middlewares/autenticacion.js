@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 // en Postman con el Post Login: Normal. Tiene vigencia de un mes
 // Si caduca se genera otro.
 // =========================================================================
-module.exports.verificaToken = async (req, res, next) => {
+const verificaToken = async (req, res, next) => {
   try {
     // leyendo header
     const token = req.get('token');
@@ -31,7 +31,7 @@ module.exports.verificaToken = async (req, res, next) => {
 // Para tener un token de administrador, en POSTMAN generar un token
 //  usando un usuario con el rol 'ADMIN_ROLE'
 // =========================================================================
-module.exports.verificaAdmin_Role = async (req, res, next) => {
+const verificaAdmin_Role = async (req, res, next) => {
   if (req.usuario.role !== 'ADMIN_ROLE' || req.usuario.estado === false) {
     return res.status(401).json({
       ok: false,
@@ -41,4 +41,30 @@ module.exports.verificaAdmin_Role = async (req, res, next) => {
     });
   }
   next();
+};
+
+// =========================================================================
+// Verificar token para imagen.
+// El token va en la url
+// =========================================================================
+const verificaTokenImg = async (req, res, next) => {
+  try {
+    const token = req.query.token;
+    const decoded = await jwt.verify(token, process.env.SEED);
+    req.usuario = decoded.usuario;
+    next();
+  } catch (err) {
+    res.status(401).json({
+      ok: false,
+      err: {
+        message: 'Token no válido',
+      },
+    });
+  }
+};
+
+module.exports = {
+  verificaToken,
+  verificaAdmin_Role,
+  verificaTokenImg,
 };
